@@ -63,15 +63,6 @@
 -renamesourcefileattribute SourceFile
 
 # remove all logging from production apk
--assumenosideeffects class android.util.Log {
-    public static *** getStackTraceString(...);
-    public static *** d(...);
-    public static *** e(...);
-    public static *** println(...);
-    public static *** w(...);
-    public static *** v(...);
-    public static *** i(...);
-}
 -assumenosideeffects class java.lang.String {
     public static java.lang.String format(...);
 }

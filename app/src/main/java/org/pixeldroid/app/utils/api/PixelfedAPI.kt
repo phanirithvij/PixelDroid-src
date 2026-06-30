@@ -41,7 +41,13 @@ interface PixelfedAPI {
             val requestBuilder = chain.request().newBuilder()
                 .removeHeader("User-Agent")
                 .addHeader("User-Agent", "PixelDroid")
-            chain.proceed(requestBuilder.build())
+
+            val request = requestBuilder.build()
+            android.util.Log.e("PixelDroidOAuth", "HTTP Request: ${request.method} ${request.url}")
+            val response = chain.proceed(request)
+            android.util.Log.e("PixelDroidOAuth", "HTTP Response: ${response.code}")
+
+            response
         }
 
         fun createFromUrl(baseUrl: String): PixelfedAPI {

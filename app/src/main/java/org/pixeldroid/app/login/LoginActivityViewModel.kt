@@ -185,12 +185,16 @@ class LoginActivityViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
+                android.util.Log.e("PixelDroidOAuth", "Starting obtainToken with code: $code")
                 val token = pixelfedAPI.obtainToken(
                     clientId, clientSecret, "$oauthScheme://$PACKAGE_ID",
                     SCOPE, code,
                     "authorization_code"
                 )
+                android.util.Log.e("PixelDroidOAuth", "obtainToken success! Token: $token")
+
                 if (token.access_token == null) {
+                    android.util.Log.e("PixelDroidOAuth", "access_token is null in successful response!")
                     return@launch failedRegistration(R.string.token_error)
                 }
                 storeInstance(db, nodeInfo, instance)
@@ -203,6 +207,12 @@ class LoginActivityViewModel @Inject constructor(
                 )
                 wipeSharedSettings()
             } catch (exception: Exception) {
+                if (exception is retrofit2.HttpException) {
+                    val errorBody = exception.response()?.errorBody()?.string()
+                    android.util.Log.e("PixelDroidOAuth", "Error getting token! HTTP ${exception.code()}: $errorBody", exception)
+                } else {
+                    android.util.Log.e("PixelDroidOAuth", "Error getting token! Exception: ", exception)
+                }
                 return@launch failedRegistration(R.string.token_error)
             }
         }
