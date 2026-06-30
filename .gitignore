@@ -17,3 +17,5 @@ app/release
 app/debug
 app/lint
 lint
+result*
+.direnv/
