@@ -59,7 +59,7 @@ stdenv.mkDerivation (finalAttrs: {
     ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
   };
 
-  gradleUpdateTask = "assembleDebug";
+  gradleUpdateTask = "assembleRelease";
 
   mitmCache = gradle.fetchDeps {
     pkg = finalAttrs.finalPackage;
@@ -75,13 +75,13 @@ stdenv.mkDerivation (finalAttrs: {
     "-Pandroid.aapt2FromMavenOverride=${androidSdk}/libexec/android-sdk/build-tools/36.0.0/aapt2"
   ];
 
-  gradleBuildTask = "assembleDebug";
+  gradleBuildTask = "assembleRelease";
 
   doCheck = false;
 
   installPhase = ''
     mkdir -p $out
-    cp app/build/outputs/apk/debug/*.apk $out/
+    cp app/build/outputs/apk/release/*.apk $out/
   '';
 
   meta.sourceProvenance = with lib.sourceTypes; [
