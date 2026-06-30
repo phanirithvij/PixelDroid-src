@@ -1,0 +1,95 @@
+From 05698cf871f815272014807a1c95ef62c206f142 Mon Sep 17 00:00:00 2001
+From: phanirithvij <phanirithvij2000@gmail.com>
+Date: Tue, 30 Jun 2026 23:52:56 +0530
+Subject: [PATCH] debug
+
+Signed-off-by: phanirithvij <phanirithvij2000@gmail.com>
+---
+ app/proguard-rules.pro                               |  9 ---------
+ .../pixeldroid/app/login/LoginActivityViewModel.kt   | 12 +++++++++++-
+ .../java/org/pixeldroid/app/utils/api/PixelfedAPI.kt |  8 +++++++-
+ 3 files changed, 18 insertions(+), 11 deletions(-)
+
+diff --git a/app/proguard-rules.pro b/app/proguard-rules.pro
+index c0689c46..b6e97021 100644
+--- a/app/proguard-rules.pro
++++ b/app/proguard-rules.pro
+@@ -63,15 +63,6 @@
+ -renamesourcefileattribute SourceFile
+ 
+ # remove all logging from production apk
+--assumenosideeffects class android.util.Log {
+-    public static *** getStackTraceString(...);
+-    public static *** d(...);
+-    public static *** e(...);
+-    public static *** println(...);
+-    public static *** w(...);
+-    public static *** v(...);
+-    public static *** i(...);
+-}
+ -assumenosideeffects class java.lang.String {
+     public static java.lang.String format(...);
+ }
+diff --git a/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt b/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt
+index e3b16083..8640f041 100644
+--- a/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt
++++ b/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt
+@@ -185,12 +185,16 @@ class LoginActivityViewModel @Inject constructor(
+ 
+         viewModelScope.launch {
+             try {
++                android.util.Log.e("PixelDroidOAuth", "Starting obtainToken with code: $code")
+                 val token = pixelfedAPI.obtainToken(
+                     clientId, clientSecret, "$oauthScheme://$PACKAGE_ID",
+                     SCOPE, code,
+                     "authorization_code"
+                 )
++                android.util.Log.e("PixelDroidOAuth", "obtainToken success! Token: $token")
++
+                 if (token.access_token == null) {
++                    android.util.Log.e("PixelDroidOAuth", "access_token is null in successful response!")
+                     return@launch failedRegistration(R.string.token_error)
+                 }
+                 storeInstance(db, nodeInfo, instance)
+@@ -203,6 +207,12 @@ class LoginActivityViewModel @Inject constructor(
+                 )
+                 wipeSharedSettings()
+             } catch (exception: Exception) {
++                if (exception is retrofit2.HttpException) {
++                    val errorBody = exception.response()?.errorBody()?.string()
++                    android.util.Log.e("PixelDroidOAuth", "Error getting token! HTTP ${exception.code()}: $errorBody", exception)
++                } else {
++                    android.util.Log.e("PixelDroidOAuth", "Error getting token! Exception: ", exception)
++                }
+                 return@launch failedRegistration(R.string.token_error)
+             }
+         }
+@@ -290,4 +300,4 @@ class LoginActivityViewModel @Inject constructor(
+         _finishedLogin.value = FinishedLogin.Finished
+     }
+ 
+-}
+\ No newline at end of file
++}
+diff --git a/app/src/main/java/org/pixeldroid/app/utils/api/PixelfedAPI.kt b/app/src/main/java/org/pixeldroid/app/utils/api/PixelfedAPI.kt
+index 05e5e9f0..e2f414a0 100644
+--- a/app/src/main/java/org/pixeldroid/app/utils/api/PixelfedAPI.kt
++++ b/app/src/main/java/org/pixeldroid/app/utils/api/PixelfedAPI.kt
+@@ -41,7 +41,13 @@ interface PixelfedAPI {
+             val requestBuilder = chain.request().newBuilder()
+                 .removeHeader("User-Agent")
+                 .addHeader("User-Agent", "PixelDroid")
+-            chain.proceed(requestBuilder.build())
++
++            val request = requestBuilder.build()
++            android.util.Log.e("PixelDroidOAuth", "HTTP Request: ${request.method} ${request.url}")
++            val response = chain.proceed(request)
++            android.util.Log.e("PixelDroidOAuth", "HTTP Response: ${response.code}")
++
++            response
+         }
+ 
+         fun createFromUrl(baseUrl: String): PixelfedAPI {
+-- 
+2.54.0
+

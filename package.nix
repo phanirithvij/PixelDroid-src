@@ -42,13 +42,13 @@ stdenv.mkDerivation (finalAttrs: {
   patches = [
     # To access local pixelfed servers for testing
     ./0001-allow-insecure-pixelfed-server-access.patch
+    # TODO rm
+    ./0001-debug.patch
   ];
 
   nativeBuildInputs = [
     gradle
   ];
-
-  # TODO no icon?
 
   postPatch = ''
     find . -type f -name "build.gradle" -exec sed -i \
