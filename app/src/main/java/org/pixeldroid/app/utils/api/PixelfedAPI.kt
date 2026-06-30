@@ -51,8 +51,8 @@ interface PixelfedAPI {
                 .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
                 .client(
                     OkHttpClient().newBuilder().addNetworkInterceptor(headerInterceptor)
-                        // Only do secure-ish TLS connections (no HTTP or very old SSL/TLS)
-                        .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS))
+                        // Allow MODERN_TLS and CLEARTEXT (for local HTTP testing)
+                        .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT))
                         .readTimeout(20, TimeUnit.SECONDS)
                         .build()
                 )
@@ -75,8 +75,8 @@ interface PixelfedAPI {
                 .baseUrl(user.instance_uri)
                 .client(
                     OkHttpClient().newBuilder().addNetworkInterceptor(headerInterceptor)
-                            // Only do secure-ish TLS connections (no HTTP or very old SSL/TLS)
-                        .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS))
+                            // Allow MODERN_TLS and CLEARTEXT (for local HTTP testing)
+                        .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT))
                         .readTimeout(20, TimeUnit.SECONDS)
                         .authenticator(TokenAuthenticator(user, db, pixelfedAPIHolder))
                         .addInterceptor {

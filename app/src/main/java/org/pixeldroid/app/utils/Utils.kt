@@ -33,6 +33,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonPrimitive
 import com.google.gson.JsonSerializer
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.pixeldroid.app.R
 import org.pixeldroid.app.utils.db.AppDatabase
 import org.pixeldroid.app.utils.db.entities.TabsDatabaseEntity
@@ -51,15 +52,11 @@ fun hasInternet(context: Context): Boolean {
  * Check if domain is valid or not
  */
 fun validDomain(domain: String?): Boolean {
-    domain?.apply {
-        try {
-            HttpUrl.Builder().host(replace("https://", "")).scheme("https").build()
-        } catch (e: IllegalArgumentException) {
-            return false
-        }
-    } ?: return false
-
-    return true
+    return try {
+        domain?.toHttpUrlOrNull() != null
+    } catch (e: Exception) {
+        false
+    }
 }
 
 fun Uri.fileExtension(contentResolver: ContentResolver): String? {
@@ -93,10 +90,11 @@ fun Context.displayDimensionsInPx(): Pair<Int, Int> {
 }
 
 fun normalizeDomain(domain: String): String {
-    return "https://" + domain
-            .replace("http://", "")
-            .replace("https://", "")
-            .trim(Char::isWhitespace)
+    val trimmed = domain.trim(Char::isWhitespace)
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        return trimmed
+    }
+    return "https://$trimmed"
 }
 
 fun Context.openUrl(url: String): Boolean {

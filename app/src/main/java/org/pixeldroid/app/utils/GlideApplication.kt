@@ -16,8 +16,8 @@ import java.io.InputStream
 class PixelDroidGlideModule : AppGlideModule() {
     override fun registerComponents(context: Context, glide: Glide, registry: Registry) {
         val client: OkHttpClient = OkHttpClient().newBuilder()
-            // Only do secure-ish TLS connections (no HTTP or very old SSL/TLS)
-            .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS))
+            // Allow MODERN_TLS and CLEARTEXT (for local HTTP testing)
+            .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT))
             .addNetworkInterceptor(PixelfedAPI.headerInterceptor)
             .build()
         val factory = OkHttpUrlLoader.Factory(client)
