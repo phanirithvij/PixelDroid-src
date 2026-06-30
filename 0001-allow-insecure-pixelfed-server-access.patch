@@ -1,0 +1,110 @@
+commit ceef7421bb57ccd929bd43e8f4f89952844c3e9b
+Author: phanirithvij <phanirithvij2000@gmail.com>
+Date:   Tue Jun 30 19:07:58 2026 +0530
+
+    allow insecure pixelfed server access
+
+    Signed-off-by: phanirithvij <phanirithvij2000@gmail.com>
+
+diff --git a/app/src/main/AndroidManifest.xml b/app/src/main/AndroidManifest.xml
+index 5986839d..7aad887d 100644
+--- a/app/src/main/AndroidManifest.xml
++++ b/app/src/main/AndroidManifest.xml
+@@ -25,6 +25,7 @@
+         android:label="@string/app_name"
+         android:roundIcon="@mipmap/ic_launcher_round"
+         android:supportsRtl="true"
++        android:usesCleartextTraffic="true"
+         android:theme="@style/BaseAppTheme">
+         <service
+             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+diff --git a/app/src/main/java/org/pixeldroid/app/utils/GlideApplication.kt b/app/src/main/java/org/pixeldroid/app/utils/GlideApplication.kt
+index c734bfd8..1207c669 100644
+--- a/app/src/main/java/org/pixeldroid/app/utils/GlideApplication.kt
++++ b/app/src/main/java/org/pixeldroid/app/utils/GlideApplication.kt
+@@ -16,8 +16,8 @@ import java.io.InputStream
+ class PixelDroidGlideModule : AppGlideModule() {
+     override fun registerComponents(context: Context, glide: Glide, registry: Registry) {
+         val client: OkHttpClient = OkHttpClient().newBuilder()
+-            // Only do secure-ish TLS connections (no HTTP or very old SSL/TLS)
+-            .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS))
++            // Allow MODERN_TLS and CLEARTEXT (for local HTTP testing)
++            .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT))
+             .addNetworkInterceptor(PixelfedAPI.headerInterceptor)
+             .build()
+         val factory = OkHttpUrlLoader.Factory(client)
+diff --git a/app/src/main/java/org/pixeldroid/app/utils/Utils.kt b/app/src/main/java/org/pixeldroid/app/utils/Utils.kt
+index 5c8c392f..4117a90d 100644
+--- a/app/src/main/java/org/pixeldroid/app/utils/Utils.kt
++++ b/app/src/main/java/org/pixeldroid/app/utils/Utils.kt
+@@ -33,6 +33,7 @@ import com.google.gson.JsonElement
+ import com.google.gson.JsonPrimitive
+ import com.google.gson.JsonSerializer
+ import okhttp3.HttpUrl
++import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+ import org.pixeldroid.app.R
+ import org.pixeldroid.app.utils.db.AppDatabase
+ import org.pixeldroid.app.utils.db.entities.TabsDatabaseEntity
+@@ -51,15 +52,11 @@ fun hasInternet(context: Context): Boolean {
+  * Check if domain is valid or not
+  */
+ fun validDomain(domain: String?): Boolean {
+-    domain?.apply {
+-        try {
+-            HttpUrl.Builder().host(replace("https://", "")).scheme("https").build()
+-        } catch (e: IllegalArgumentException) {
+-            return false
+-        }
+-    } ?: return false
+-
+-    return true
++    return try {
++        domain?.toHttpUrlOrNull() != null
++    } catch (e: Exception) {
++        false
++    }
+ }
+ 
+ fun Uri.fileExtension(contentResolver: ContentResolver): String? {
+@@ -93,10 +90,11 @@ fun Context.displayDimensionsInPx(): Pair<Int, Int> {
+ }
+ 
+ fun normalizeDomain(domain: String): String {
+-    return "https://" + domain
+-            .replace("http://", "")
+-            .replace("https://", "")
+-            .trim(Char::isWhitespace)
++    val trimmed = domain.trim(Char::isWhitespace)
++    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
++        return trimmed
++    }
++    return "https://$trimmed"
+ }
+ 
+ fun Context.openUrl(url: String): Boolean {
+diff --git a/app/src/main/java/org/pixeldroid/app/utils/api/PixelfedAPI.kt b/app/src/main/java/org/pixeldroid/app/utils/api/PixelfedAPI.kt
+index daadb1ec..05e5e9f0 100644
+--- a/app/src/main/java/org/pixeldroid/app/utils/api/PixelfedAPI.kt
++++ b/app/src/main/java/org/pixeldroid/app/utils/api/PixelfedAPI.kt
+@@ -51,8 +51,8 @@ interface PixelfedAPI {
+                 .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
+                 .client(
+                     OkHttpClient().newBuilder().addNetworkInterceptor(headerInterceptor)
+-                        // Only do secure-ish TLS connections (no HTTP or very old SSL/TLS)
+-                        .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS))
++                        // Allow MODERN_TLS and CLEARTEXT (for local HTTP testing)
++                        .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT))
+                         .readTimeout(20, TimeUnit.SECONDS)
+                         .build()
+                 )
+@@ -75,8 +75,8 @@ interface PixelfedAPI {
+                 .baseUrl(user.instance_uri)
+                 .client(
+                     OkHttpClient().newBuilder().addNetworkInterceptor(headerInterceptor)
+-                            // Only do secure-ish TLS connections (no HTTP or very old SSL/TLS)
+-                        .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS))
++                            // Allow MODERN_TLS and CLEARTEXT (for local HTTP testing)
++                        .connectionSpecs(listOf(ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT))
+                         .readTimeout(20, TimeUnit.SECONDS)
+                         .authenticator(TokenAuthenticator(user, db, pixelfedAPIHolder))
+                         .addInterceptor {
