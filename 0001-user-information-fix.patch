@@ -1,0 +1,119 @@
+From 88b22e26635942a0e318d8dbcab00be6e1603365 Mon Sep 17 00:00:00 2001
+From: phanirithvij <phanirithvij2000@gmail.com>
+Date: Wed, 1 Jul 2026 09:03:30 +0530
+Subject: [PATCH] user information fix
+
+Signed-off-by: phanirithvij <phanirithvij2000@gmail.com>
+---
+ app/proguard-rules.pro                        |  2 +-
+ .../app/login/LoginActivityViewModel.kt       |  7 ++++++-
+ .../app/utils/api/objects/Account.kt          |  6 ++++--
+ .../org/pixeldroid/app/utils/db/DBUtils.kt    | 20 +++++++++----------
+ 4 files changed, 21 insertions(+), 14 deletions(-)
+
+diff --git a/app/proguard-rules.pro b/app/proguard-rules.pro
+index b6e97021..5fe43b43 100644
+--- a/app/proguard-rules.pro
++++ b/app/proguard-rules.pro
+@@ -44,7 +44,7 @@
+ # APP SPECIFIC OPTIONS
+ 
+ # keep members of our model classes, they are used in json de/serialization
+--keepclassmembers class org.pixeldroid.app.utils.api.objects.* { *; }
++-keep class org.pixeldroid.app.utils.api.objects.** { *; }
+ 
+ -keep public enum org.pixeldroid.app.utils.api.objects.*$** {
+     **[] $VALUES;
+diff --git a/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt b/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt
+index 094f4a9c..7559d320 100644
+--- a/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt
++++ b/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt
+@@ -197,7 +197,7 @@ class LoginActivityViewModel @Inject constructor(
+                     android.util.Log.e("PixelDroidOAuth", "access_token is null in successful response!")
+                     return@launch failedRegistration(R.string.token_error)
+                 }
+-                storeInstance(db, nodeInfo, instance)
++                storeInstance(db, nodeInfo, instance, domain)
+                 storeUser(
+                     token.access_token,
+                     token.refresh_token,
+@@ -222,6 +222,10 @@ class LoginActivityViewModel @Inject constructor(
+         try {
+             val firstTime = db.userDao().getActiveUser() == null
+             val user = pixelfedAPI.verifyCredentials("Bearer $accessToken")
++            android.util.Log.e("PixelDroidOAuth", "verifyCredentials user: $user")
++            if (user.id == null || user.username == null) {
++                return failedRegistration(R.string.verify_credentials)
++            }
+             db.userDao().deActivateActiveUsers()
+             addUser(
+                 db,
+@@ -239,6 +243,7 @@ class LoginActivityViewModel @Inject constructor(
+ 
+             _finishedLogin.value = if(firstTime) FinishedLogin.FinishedFirstTime else FinishedLogin.Finished
+         } catch (exception: Exception) {
++            android.util.Log.e("PixelDroidOAuth", "Exception in storeUser!", exception)
+             return failedRegistration(R.string.verify_credentials)
+         }
+ 
+diff --git a/app/src/main/java/org/pixeldroid/app/utils/api/objects/Account.kt b/app/src/main/java/org/pixeldroid/app/utils/api/objects/Account.kt
+index 402d58dd..fe15b9c8 100644
+--- a/app/src/main/java/org/pixeldroid/app/utils/api/objects/Account.kt
++++ b/app/src/main/java/org/pixeldroid/app/utils/api/objects/Account.kt
+@@ -16,10 +16,12 @@ Represents a user and their associated profile.
+ https://docs.joinmastodon.org/entities/account/
+  */
+ 
++import com.google.gson.annotations.SerializedName
++
+ data class Account(
+     //Base attributes
+-    override val id: String?,
+-    val username: String?,
++    @SerializedName("id") override val id: String?,
++    @SerializedName("username") val username: String?,
+     val acct: String? = "",
+     val url: String? = "", //HTTPS URL
+     //Display attributes
+diff --git a/app/src/main/java/org/pixeldroid/app/utils/db/DBUtils.kt b/app/src/main/java/org/pixeldroid/app/utils/db/DBUtils.kt
+index f7ad4c42..65fbacad 100644
+--- a/app/src/main/java/org/pixeldroid/app/utils/db/DBUtils.kt
++++ b/app/src/main/java/org/pixeldroid/app/utils/db/DBUtils.kt
+@@ -44,24 +44,24 @@ suspend fun updateUserInfoDb(db: AppDatabase, account: Account) {
+     )
+ }
+ 
+-suspend fun storeInstance(db: AppDatabase, nodeInfo: NodeInfo?, instance: Instance? = null) {
++suspend fun storeInstance(db: AppDatabase, nodeInfo: NodeInfo?, instance: Instance? = null, domain: String) {
+     val dbInstance: InstanceDatabaseEntity = nodeInfo?.run {
+         InstanceDatabaseEntity(
+-            uri = normalizeDomain(metadata?.config?.site?.url!!),
+-            title = metadata.config.site.name!!,
+-            maxStatusChars = metadata.config.uploader?.max_caption_length!!.toInt(),
+-            maxPhotoSize = metadata.config.uploader.max_photo_size?.toIntOrNull()
++            uri = normalizeDomain(domain),
++            title = metadata?.config?.site?.name ?: domain,
++            maxStatusChars = metadata?.config?.uploader?.max_caption_length?.toInt() ?: DEFAULT_MAX_TOOT_CHARS,
++            maxPhotoSize = metadata?.config?.uploader?.max_photo_size?.toIntOrNull()
+                 ?: DEFAULT_MAX_PHOTO_SIZE,
+             // Pixelfed doesn't distinguish between max photo and video size
+-            maxVideoSize = metadata.config.uploader.max_photo_size?.toIntOrNull()
++            maxVideoSize = metadata?.config?.uploader?.max_photo_size?.toIntOrNull()
+                 ?: DEFAULT_MAX_VIDEO_SIZE,
+-            albumLimit = metadata.config.uploader.album_limit?.toIntOrNull() ?: DEFAULT_ALBUM_LIMIT,
+-            videoEnabled = metadata.config.features?.video ?: DEFAULT_VIDEO_ENABLED,
+-            pixelfed = metadata.software?.repo?.contains("pixelfed", ignoreCase = true) == true
++            albumLimit = metadata?.config?.uploader?.album_limit?.toIntOrNull() ?: DEFAULT_ALBUM_LIMIT,
++            videoEnabled = metadata?.config?.features?.video ?: DEFAULT_VIDEO_ENABLED,
++            pixelfed = metadata?.software?.repo?.contains("pixelfed", ignoreCase = true) == true
+         )
+     } ?: instance?.run {
+         InstanceDatabaseEntity(
+-            uri = normalizeDomain(uri.orEmpty()),
++            uri = normalizeDomain(domain),
+             title = title.orEmpty(),
+             maxStatusChars = max_toot_chars?.toInt() ?: DEFAULT_MAX_TOOT_CHARS,
+             pixelfed = false
+-- 
+2.54.0
+

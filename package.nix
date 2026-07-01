@@ -45,6 +45,7 @@ stdenv.mkDerivation (finalAttrs: {
     # TODO rm
     ./0001-debug.patch
     ./0001-login-fix.patch
+    ./0001-user-information-fix.patch
   ];
 
   nativeBuildInputs = [
