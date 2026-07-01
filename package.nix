@@ -44,6 +44,7 @@ stdenv.mkDerivation (finalAttrs: {
     ./0001-allow-insecure-pixelfed-server-access.patch
     # TODO rm
     ./0001-debug.patch
+    ./0001-login-fix.patch
   ];
 
   nativeBuildInputs = [

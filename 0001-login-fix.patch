@@ -1,0 +1,26 @@
+From 85ae9b75123c882aee694877e0564bb40744a279 Mon Sep 17 00:00:00 2001
+From: phanirithvij <phanirithvij2000@gmail.com>
+Date: Wed, 1 Jul 2026 08:51:47 +0530
+Subject: [PATCH] login fix
+
+Signed-off-by: phanirithvij <phanirithvij2000@gmail.com>
+---
+ .../java/org/pixeldroid/app/login/LoginActivityViewModel.kt     | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt b/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt
+index 8640f041..094f4a9c 100644
+--- a/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt
++++ b/app/src/main/java/org/pixeldroid/app/login/LoginActivityViewModel.kt
+@@ -152,7 +152,7 @@ class LoginActivityViewModel @Inject constructor(
+             ?: return@coroutineScope failedRegistration(R.string.instance_error)
+ 
+         preferences.edit()
+-            .putString("domain", normalizeDomain(domain))
++            .putString("domain", normalizedDomain)
+             .apply()
+ 
+         if (!nodeInfo.software?.name.orEmpty().contains("pixelfed")) {
+-- 
+2.54.0
+
