@@ -152,7 +152,7 @@ class LoginActivityViewModel @Inject constructor(
             ?: return@coroutineScope failedRegistration(R.string.instance_error)
 
         preferences.edit()
-            .putString("domain", normalizeDomain(domain))
+            .putString("domain", normalizedDomain)
             .apply()
 
         if (!nodeInfo.software?.name.orEmpty().contains("pixelfed")) {
