@@ -16,10 +16,12 @@ Represents a user and their associated profile.
 https://docs.joinmastodon.org/entities/account/
  */
 
+import com.google.gson.annotations.SerializedName
+
 data class Account(
     //Base attributes
-    override val id: String?,
-    val username: String?,
+    @SerializedName("id") override val id: String?,
+    @SerializedName("username") val username: String?,
     val acct: String? = "",
     val url: String? = "", //HTTPS URL
     //Display attributes

@@ -197,7 +197,7 @@ class LoginActivityViewModel @Inject constructor(
                     android.util.Log.e("PixelDroidOAuth", "access_token is null in successful response!")
                     return@launch failedRegistration(R.string.token_error)
                 }
-                storeInstance(db, nodeInfo, instance)
+                storeInstance(db, nodeInfo, instance, domain)
                 storeUser(
                     token.access_token,
                     token.refresh_token,
@@ -222,6 +222,10 @@ class LoginActivityViewModel @Inject constructor(
         try {
             val firstTime = db.userDao().getActiveUser() == null
             val user = pixelfedAPI.verifyCredentials("Bearer $accessToken")
+            android.util.Log.e("PixelDroidOAuth", "verifyCredentials user: $user")
+            if (user.id == null || user.username == null) {
+                return failedRegistration(R.string.verify_credentials)
+            }
             db.userDao().deActivateActiveUsers()
             addUser(
                 db,
@@ -239,6 +243,7 @@ class LoginActivityViewModel @Inject constructor(
 
             _finishedLogin.value = if(firstTime) FinishedLogin.FinishedFirstTime else FinishedLogin.Finished
         } catch (exception: Exception) {
+            android.util.Log.e("PixelDroidOAuth", "Exception in storeUser!", exception)
             return failedRegistration(R.string.verify_credentials)
         }
 
